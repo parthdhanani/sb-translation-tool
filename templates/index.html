@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SB Translation Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0a0a0a; --sf:#141414; --sf2:#1c1c1c; --bd:rgba(255,255,255,.08);
+      --bd2:rgba(255,255,255,.13); --tx:#f9fafb; --tx2:#d1d5db; --mu:#6b7280;
+      --di:#9ca3af; --ac:#6366f1; --ac2:#4f46e5; --acr:99,102,241;
+      --gd:#C5A059; --gdd:rgba(197,160,89,.12); --gr:#22c55e; --rd:#ef4444;
+      --r:12px; --rl:18px;
+    }
+    html,body { background:var(--bg); color:var(--tx); font-family:'Inter',sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+    /* nav */
+    .nav { position:sticky; top:0; z-index:50; height:56px; padding:0 28px;
+           display:flex; align-items:center; justify-content:space-between;
+           background:rgba(10,10,10,.9); backdrop-filter:blur(18px);
+           border-bottom:1px solid var(--bd); }
+    .nav-brand { display:flex; align-items:center; gap:11px; text-decoration:none; }
+    .nav-logo { width:32px; height:32px; border-radius:8px; flex-shrink:0;
+                background:linear-gradient(135deg,var(--ac),#818cf8);
+                display:flex; align-items:center; justify-content:center;
+                font-size:13px; font-weight:900; color:#fff;
+                box-shadow:0 0 14px rgba(var(--acr),.35); }
+    .nav-title { font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--tx2); }
+    .nav-sub   { font-size:10px; color:var(--mu); font-family:'Space Mono',monospace; }
+    .nav-pill  { padding:4px 12px; border-radius:99px; font-size:10px; font-weight:700;
+                 letter-spacing:.08em; text-transform:uppercase; color:var(--gd);
+                 background:var(--gdd); border:1px solid rgba(197,160,89,.2);
+                 font-family:'Space Mono',monospace; }
+
+    /* tabs */
+    .tabs { display:flex; padding:0 28px; border-bottom:1px solid var(--bd); background:rgba(10,10,10,.5); }
+    .tab  { padding:14px 20px; font-size:11px; font-weight:700; letter-spacing:.08em;
+            text-transform:uppercase; color:var(--mu); border-bottom:2px solid transparent;
+            cursor:pointer; transition:color .15s,border-color .15s; user-select:none;
+            display:flex; align-items:center; gap:8px; font-family:'Space Mono',monospace; }
+    .tab:hover { color:var(--di); }
+    .tab.active { color:var(--tx); border-bottom-color:var(--ac); }
+    .tab-chip { padding:2px 7px; border-radius:4px; font-size:9px; font-weight:700; }
+    .chip-docx  { background:rgba(var(--acr),.12); color:#a5b4fc; }
+    .chip-story { background:rgba(34,197,94,.1);   color:#4ade80; }
+
+    /* page */
+    .page { padding:0 28px 100px; max-width:1400px; margin:0 auto; }
+    .method-panel { display:none; }
+    .method-panel.active { display:block; }
+
+    /* upload step — centred */
+    .upload-step { min-height:calc(100vh - 116px); display:flex; flex-direction:column;
+                   align-items:center; justify-content:center; text-align:center; padding:40px 20px; }
+    .upload-eyebrow { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+                      color:var(--gd); font-family:'Space Mono',monospace; margin-bottom:12px; }
+    .upload-heading { font-size:34px; font-weight:700; font-family:'Playfair Display',serif;
+                      margin-bottom:10px; line-height:1.2; }
+    .upload-sub { font-size:13px; color:var(--mu); margin-bottom:40px; max-width:420px; line-height:1.6; }
+    .upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px;
+                   width:100%; max-width:580px; margin-bottom:16px; }
+    @media(max-width:500px){ .upload-grid { grid-template-columns:1fr; } }
+
+    /* drop zones */
+    .drop-zone { background:var(--sf); border:1px solid var(--bd); border-radius:var(--rl);
+                 padding:32px 18px; cursor:pointer; position:relative;
+                 transition:border-color .2s, box-shadow .25s, transform .2s; }
+    .drop-zone:hover { border-color:rgba(var(--acr),.38); box-shadow:0 0 28px rgba(var(--acr),.09), 0 4px 24px rgba(0,0,0,.4); transform:translateY(-2px); }
+    .drop-zone.dragover { border-color:var(--ac); box-shadow:0 0 36px rgba(var(--acr),.22); transform:scale(1.02); }
+    .drop-zone.has-file { border-color:rgba(34,197,94,.38); box-shadow:0 0 20px rgba(34,197,94,.08); }
+    .drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .dz-icon-wrap { width:48px; height:48px; border-radius:12px; background:rgba(var(--acr),.1);
+                    border:1px solid rgba(var(--acr),.2); display:flex; align-items:center;
+                    justify-content:center; margin:0 auto 14px; transition:background .2s,border-color .2s; }
+    .has-file .dz-icon-wrap { background:rgba(34,197,94,.1); border-color:rgba(34,197,94,.25); }
+    .dz-icon { width:22px; height:22px; opacity:.7; color:#a5b4fc; }
+    .has-file .dz-icon { color:var(--gr); }
+    .dz-label { font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+                display:block; margin-bottom:5px; font-family:'Space Mono',monospace; color:var(--tx2); }
+    .dz-hint { font-size:11px; color:var(--mu); }
+    .dz-name { display:none; font-size:11px; color:var(--gr); margin-top:8px; word-break:break-all; font-family:'Space Mono',monospace; }
+    .has-file .dz-name { display:block; }
+    .has-file .dz-hint { display:none; }
+    .scan-wrap { width:100%; max-width:580px; }
+
+    /* buttons */
+    .btn { display:flex; align-items:center; justify-content:center; gap:9px; padding:14px; width:100%;
+           background:var(--ac); color:#fff; font-size:12px; font-weight:700; letter-spacing:.08em;
+           text-transform:uppercase; border:none; border-radius:var(--r); cursor:pointer;
+           transition:background .15s,box-shadow .2s,transform .15s,opacity .15s;
+           font-family:'Space Mono',monospace; }
+    .btn:hover { background:var(--ac2); box-shadow:0 0 28px rgba(var(--acr),.45); transform:translateY(-1px); }
+    .btn:active { transform:translateY(0); }
+    .btn:disabled { opacity:.38; cursor:not-allowed; box-shadow:none; transform:none; }
+
+    .btn-ghost { padding:8px 16px; background:transparent; border:1px solid var(--bd2);
+                 border-radius:var(--r); color:var(--mu); font-size:11px; font-weight:600;
+                 cursor:pointer; transition:border-color .15s,color .15s,transform .15s;
+                 font-family:'Space Mono',monospace; letter-spacing:.04em; }
+    .btn-ghost:hover { border-color:rgba(255,255,255,.22); color:var(--tx); transform:translateY(-1px); }
+
+    .btn-apply { padding:12px 30px; background:var(--gr); color:#fff; font-size:12px; font-weight:700;
+                 letter-spacing:.08em; text-transform:uppercase; border:none; border-radius:var(--r);
+                 cursor:pointer; display:flex; align-items:center; gap:9px; font-family:'Space Mono',monospace;
+                 transition:background .15s,box-shadow .2s,transform .15s,opacity .15s; }
+    .btn-apply:hover { background:#16a34a; box-shadow:0 0 26px rgba(34,197,94,.4); transform:translateY(-1px); }
+    .btn-apply:active { transform:translateY(0); }
+    .btn-apply:disabled { opacity:.38; cursor:not-allowed; box-shadow:none; transform:none; }
+
+    .tool-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px;
+                background:rgba(255,255,255,.05); border:1px solid var(--bd);
+                border-radius:var(--r); color:var(--di); font-size:11px; font-weight:600;
+                cursor:pointer; transition:background .15s,border-color .15s,color .15s;
+                font-family:'Space Mono',monospace; white-space:nowrap; }
+    .tool-btn:hover { background:rgba(255,255,255,.09); border-color:var(--bd2); color:var(--tx); }
+    .tool-btn svg { flex-shrink:0; }
+
+    .spinner { display:none; width:14px; height:14px; border:2px solid rgba(255,255,255,.22);
+               border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* map step */
+    .map-step { padding-top:32px; }
+    .map-header { display:flex; align-items:flex-start; justify-content:space-between;
+                  margin-bottom:28px; gap:16px; flex-wrap:wrap; }
+    .map-header h2 { font-size:24px; font-weight:700; letter-spacing:-.02em;
+                     font-family:'Playfair Display',serif; margin-bottom:4px; }
+    .map-header p { font-size:13px; color:var(--mu); max-width:460px; }
+
+    .map-layout { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start; }
+    @media(max-width:860px){ .map-layout { grid-template-columns:1fr; } }
+
+    .col-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+                 color:var(--mu); font-family:'Space Mono',monospace; margin-bottom:10px; }
+
+    /* filter bar */
+    .filter-bar { display:flex; align-items:center; justify-content:space-between;
+                  gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .type-pills { display:flex; gap:5px; flex-wrap:wrap; }
+    .type-pill { padding:4px 11px; border-radius:99px; font-size:10px; font-weight:700;
+                 letter-spacing:.05em; cursor:pointer; font-family:'Space Mono',monospace;
+                 border:1px solid var(--bd2); color:var(--mu); background:transparent;
+                 transition:background .15s,color .15s,border-color .15s; }
+    .type-pill.active { color:var(--tx); border-color:rgba(var(--acr),.5); background:rgba(var(--acr),.12); }
+    .type-pill:hover:not(.active) { color:var(--di); border-color:var(--bd2); }
+    .toolbar-actions { display:flex; gap:6px; align-items:center; }
+
+    /* SB cards */
+    .sb-list { display:flex; flex-direction:column; gap:8px; }
+    .sb-card { background:var(--sf); border:1px solid var(--bd); border-radius:var(--r); padding:12px 14px; }
+    .sb-num { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.06em;
+              text-transform:uppercase; color:var(--gd); background:var(--gdd);
+              border-radius:4px; padding:2px 7px; margin-bottom:7px; font-family:'Space Mono',monospace; }
+    .sb-stem { font-size:12px; color:var(--tx2); line-height:1.5; }
+    .sb-opts { font-size:11px; color:var(--mu); margin-top:5px; font-family:'Space Mono',monospace; }
+
+    /* question cards */
+    .wq-list { display:flex; flex-direction:column; gap:9px; }
+    .wq-card { background:var(--sf); border:1px solid var(--bd); border-radius:var(--r);
+               overflow:hidden; transition:border-color .2s,box-shadow .25s; }
+    .wq-card.mapped { border-color:rgba(var(--acr),.35); box-shadow:0 0 20px rgba(var(--acr),.08); }
+
+    .wq-top { display:flex; align-items:center; gap:9px; padding:11px 15px; border-bottom:1px solid var(--bd); flex-wrap:wrap; }
+    .wq-name { font-size:13px; font-weight:700; flex-shrink:0; }
+    .wq-stem { font-size:12px; color:var(--di); margin-left:auto; text-align:right;
+               white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px; }
+
+    .badge { flex-shrink:0; display:inline-block; padding:2px 8px; border-radius:4px;
+             font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+             font-family:'Space Mono',monospace; }
+    .badge-MCQ { background:rgba(var(--acr),.12); color:#a5b4fc; }
+    .badge-MRQ { background:rgba(139,92,246,.12);  color:#c4b5fd; }
+    .badge-TF  { background:rgba(20,184,166,.12);   color:#2dd4bf; }
+    .badge-DND { background:rgba(245,158,11,.12);   color:#fbbf24; }
+
+    .mismatch-badge { display:none; align-items:center; gap:4px; flex-shrink:0;
+                      font-size:10px; font-weight:700; color:#fb923c;
+                      background:rgba(251,146,60,.12); border:1px solid rgba(251,146,60,.2);
+                      border-radius:4px; padding:2px 8px; font-family:'Space Mono',monospace; }
+
+    .wq-options { padding:7px 15px 2px; display:flex; flex-direction:column; gap:2px; }
+    .opt-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--di);
+               padding:4px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+    .opt-row:last-child { border-bottom:none; }
+    .opt-pos { font-size:10px; font-weight:700; color:var(--mu); background:rgba(255,255,255,.05);
+               border-radius:3px; padding:1px 6px; min-width:30px; text-align:center; font-family:'Space Mono',monospace; }
+    .opt-text { flex:1; }
+    .opt-correct { color:var(--gr); font-size:10px; font-weight:700; font-family:'Space Mono',monospace; }
+
+    .wq-body { padding:11px 15px 13px; }
+    .wq-select-wrap { display:flex; align-items:center; gap:9px; }
+    .wq-select-label { font-size:11px; color:var(--mu); white-space:nowrap; font-family:'Space Mono',monospace; }
+
+    select { flex:1; background:rgba(255,255,255,.04); border:1px solid var(--bd2);
+             border-radius:var(--r); color:var(--tx); font-size:13px; padding:9px 11px;
+             cursor:pointer; outline:none; transition:border-color .15s,box-shadow .15s;
+             font-family:'Inter',sans-serif; }
+    select:focus { border-color:rgba(var(--acr),.5); box-shadow:0 0 0 3px rgba(var(--acr),.1); }
+    select option,optgroup { background:#1a1a1a; }
+
+    /* diff preview */
+    .diff-wrap { display:none; margin-top:10px; }
+    .diff-wrap.visible { display:block; }
+    .diff-grid { display:grid; grid-template-columns:1fr 20px 1fr; gap:0; }
+    .diff-side { padding:10px 12px; font-size:11px; line-height:1.55; border-radius:var(--r); }
+    .diff-before { background:rgba(255,255,255,.03); border:1px solid var(--bd); color:var(--mu); }
+    .diff-after  { background:rgba(var(--acr),.06); border:1px solid rgba(var(--acr),.18);
+                   border-left:2px solid var(--ac); color:var(--di); }
+    .diff-arrow  { display:flex; align-items:center; justify-content:center;
+                   font-size:14px; color:var(--mu); }
+    .diff-label  { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+                   font-family:'Space Mono',monospace; margin-bottom:6px; }
+    .diff-before .diff-label { color:var(--mu); }
+    .diff-after  .diff-label { color:var(--ac); }
+    .diff-stem { font-weight:600; margin-bottom:4px; }
+    .diff-after .diff-stem { color:var(--tx); }
+    .diff-opt { opacity:.8; padding-left:8px; }
+
+    /* action bar */
+    .action-bar { position:fixed; bottom:0; left:0; right:0; z-index:40;
+                  background:rgba(10,10,10,.93); backdrop-filter:blur(20px);
+                  border-top:1px solid var(--bd2); padding:14px 28px;
+                  display:none; align-items:center; justify-content:space-between;
+                  gap:14px; transform:translateY(100%); }
+    .action-bar.visible { display:flex; }
+    .ab-info { display:flex; flex-direction:column; gap:2px; }
+    .ab-count { font-size:20px; font-weight:800; font-family:'Playfair Display',serif; }
+    .ab-count span { color:var(--ac); }
+    .ab-sub { font-size:11px; color:var(--mu); font-family:'Space Mono',monospace; }
+
+    /* result */
+    .step-result { display:none; min-height:calc(100vh - 116px); flex-direction:column;
+                   align-items:center; justify-content:center; text-align:center; padding:60px 20px; }
+    .result-icon { width:70px; height:70px; border-radius:50%; background:rgba(34,197,94,.1);
+                   border:1px solid rgba(34,197,94,.25); display:flex; align-items:center;
+                   justify-content:center; font-size:26px; margin:0 auto 22px;
+                   box-shadow:0 0 30px rgba(34,197,94,.15); }
+    .step-result h2 { font-size:30px; font-weight:700; font-family:'Playfair Display',serif; margin-bottom:6px; }
+    .step-result > p { font-size:14px; color:var(--mu); margin-bottom:30px; }
+    .result-stats { display:flex; gap:18px; justify-content:center; margin-bottom:30px; }
+    .rstat { background:var(--sf); border:1px solid var(--bd); border-radius:var(--rl); padding:16px 26px; min-width:100px; }
+    .rstat .n { font-size:32px; font-weight:800; font-family:'Playfair Display',serif; }
+    .rstat .l { font-size:10px; color:var(--mu); margin-top:3px; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:.07em; }
+    .result-actions { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .btn-dl { display:inline-flex; align-items:center; gap:9px; padding:13px 32px;
+              background:var(--gr); color:#fff; font-size:12px; font-weight:700;
+              letter-spacing:.08em; text-transform:uppercase; border-radius:var(--r);
+              text-decoration:none; font-family:'Space Mono',monospace;
+              transition:background .15s,box-shadow .2s,transform .15s; }
+    .btn-dl:hover { background:#16a34a; box-shadow:0 0 26px rgba(34,197,94,.4); transform:translateY(-2px); }
+
+    /* error + toast */
+    .error-box { background:rgba(239,68,68,.07); border:1px solid rgba(239,68,68,.22);
+                 border-left:3px solid var(--rd); border-radius:var(--r);
+                 padding:11px 14px; font-size:12px; color:#f87171; margin-top:14px;
+                 font-family:'Space Mono',monospace; width:100%; max-width:580px; }
+    .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+             background:#1e1e1e; border:1px solid var(--bd2); border-radius:99px;
+             padding:9px 20px; font-size:12px; color:var(--tx2); white-space:nowrap;
+             box-shadow:0 8px 32px rgba(0,0,0,.5); z-index:200; pointer-events:none;
+             font-family:'Space Mono',monospace; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">SB</div>
+    <div>
+      <div class="nav-title">SB Translation Tool</div>
+      <div class="nav-sub">Storyline 360 · Question Updater</div>
+    </div>
+  </div>
+</nav>
+
+<div class="tabs">
+  <div class="tab active" id="tab-word" onclick="switchTab('word')">Word Doc <span class="tab-chip chip-docx">DOCX</span></div>
+  <div class="tab" id="tab-story" onclick="switchTab('story')">Story File <span class="tab-chip chip-story">STORY</span></div>
+</div>
+
+<div class="page">
+
+  <!-- ════ WORD METHOD ════ -->
+  <div class="method-panel active" id="panel-word">
+    <div class="upload-step" id="w-upload">
+      <div class="upload-eyebrow">Word Doc Method</div>
+      <h1 class="upload-heading">Update your translation doc</h1>
+      <p class="upload-sub">Upload the SB storyboard and the Storyline Word translation export. Map questions, then download.</p>
+      <div class="upload-grid" id="w-grid">
+        <label class="drop-zone" id="w-pptxZone">
+          <input type="file" id="w-pptxInput" accept=".pptx" />
+          <div class="dz-icon-wrap"><svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg></div>
+          <span class="dz-label">Storyboard</span>
+          <span class="dz-hint">PPTX · click or drag</span>
+          <span class="dz-name" id="w-pptxName"></span>
+        </label>
+        <label class="drop-zone" id="w-wordZone">
+          <input type="file" id="w-wordInput" accept=".docx" />
+          <div class="dz-icon-wrap"><svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+          <span class="dz-label">Translation Doc</span>
+          <span class="dz-hint">DOCX · click or drag</span>
+          <span class="dz-name" id="w-wordName"></span>
+        </label>
+      </div>
+      <div class="scan-wrap">
+        <button class="btn" id="w-scanBtn" onclick="doScan('word')">
+          <span id="w-scanText">Scan Files</span><div class="spinner" id="w-scanSpin"></div>
+        </button>
+        <div class="error-box" id="w-err" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="map-step" id="w-map" style="display:none;">
+      <div class="map-header">
+        <div><h2>Map Questions</h2><p>Choose which SB question replaces each Translation Doc question. Only mapped questions are updated.</p></div>
+        <button class="btn-ghost" onclick="doReset('word')">← Start over</button>
+      </div>
+      <div class="map-layout">
+        <div>
+          <div class="col-label">SB Questions <span id="w-sbCnt" style="color:var(--mu);font-weight:400;"></span></div>
+          <div class="sb-list" id="w-sbList"></div>
+        </div>
+        <div>
+          <div class="filter-bar" id="w-fbar">
+            <div class="type-pills" id="w-pills"></div>
+            <div class="toolbar-actions">
+              <button class="tool-btn" onclick="autoSuggest('word')" title="Match by question text similarity">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Auto-suggest
+              </button>
+              <button class="tool-btn" onclick="clearAllMappings('word')" title="Clear all selections">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Clear all
+              </button>
+              <button class="tool-btn" onclick="exportJSON('word')" title="Export mapping as JSON">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
+              </button>
+              <label class="tool-btn" title="Import saved mapping">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3" transform="rotate(180 12 12)"/></svg>Import
+                <input type="file" accept=".json" style="display:none" onchange="importJSON(this,'word')">
+              </label>
+            </div>
+          </div>
+          <div class="col-label">Translation Doc Questions <span id="w-qCnt" style="color:var(--mu);font-weight:400;"></span></div>
+          <div class="wq-list" id="w-qList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-result" id="w-result">
+      <div class="result-icon" id="w-ricon">✓</div>
+      <h2 id="w-rh">Done</h2>
+      <p id="w-rdesc"></p>
+      <div class="result-stats" id="w-rstats"></div>
+      <div class="result-actions" id="w-ract">
+        <a id="w-dl" class="btn-dl" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Updated DOCX
+        </a>
+        <p style="font-size:11px;color:var(--mu);max-width:360px;text-align:center;line-height:1.6;font-family:'Space Mono',monospace;">Storyline's correct/incorrect feedback layers reference answer text — review them after re-importing.</p>
+        <button class="btn-ghost" onclick="doReset('word')">Process another file</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ STORY METHOD ════ -->
+  <div class="method-panel" id="panel-story">
+    <div class="upload-step" id="s-upload">
+      <div class="upload-eyebrow">Story File Method</div>
+      <h1 class="upload-heading">Update your .story file directly</h1>
+      <p class="upload-sub">Upload the SB storyboard and the Storyline .story binary. Map questions and download the updated file.</p>
+      <div class="upload-grid" id="s-grid">
+        <label class="drop-zone" id="s-pptxZone">
+          <input type="file" id="s-pptxInput" accept=".pptx" />
+          <div class="dz-icon-wrap"><svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg></div>
+          <span class="dz-label">Storyboard</span>
+          <span class="dz-hint">PPTX · click or drag</span>
+          <span class="dz-name" id="s-pptxName"></span>
+        </label>
+        <label class="drop-zone" id="s-storyZone">
+          <input type="file" id="s-storyInput" accept=".story" />
+          <div class="dz-icon-wrap"><svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
+          <span class="dz-label">Story File</span>
+          <span class="dz-hint">.story · click or drag</span>
+          <span class="dz-name" id="s-storyName"></span>
+        </label>
+      </div>
+      <div class="scan-wrap">
+        <button class="btn" id="s-scanBtn" onclick="doScan('story')">
+          <span id="s-scanText">Scan Files</span><div class="spinner" id="s-scanSpin"></div>
+        </button>
+        <div class="error-box" id="s-err" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="map-step" id="s-map" style="display:none;">
+      <div class="map-header">
+        <div><h2>Map Questions</h2><p>Select which SB question replaces each story slide. Correct answers are shown for reference — they won't change.</p></div>
+        <button class="btn-ghost" onclick="doReset('story')">← Start over</button>
+      </div>
+      <div class="map-layout">
+        <div>
+          <div class="col-label">SB Questions <span id="s-sbCnt" style="color:var(--mu);font-weight:400;"></span></div>
+          <div class="sb-list" id="s-sbList"></div>
+        </div>
+        <div>
+          <div class="filter-bar" id="s-fbar">
+            <div class="type-pills" id="s-pills"></div>
+            <div class="toolbar-actions">
+              <button class="tool-btn" onclick="autoSuggest('story')" title="Match by question text similarity">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Auto-suggest
+              </button>
+              <button class="tool-btn" onclick="clearAllMappings('story')" title="Clear all selections">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Clear all
+              </button>
+              <button class="tool-btn" onclick="exportJSON('story')" title="Export mapping as JSON">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
+              </button>
+              <label class="tool-btn" title="Import saved mapping">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3" transform="rotate(180 12 12)"/></svg>Import
+                <input type="file" accept=".json" style="display:none" onchange="importJSON(this,'story')">
+              </label>
+            </div>
+          </div>
+          <div class="col-label">Story Questions <span id="s-qCnt" style="color:var(--mu);font-weight:400;"></span></div>
+          <div class="wq-list" id="s-qList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-result" id="s-result">
+      <div class="result-icon" id="s-ricon">✓</div>
+      <h2 id="s-rh">Done</h2>
+      <p id="s-rdesc"></p>
+      <div class="result-stats" id="s-rstats"></div>
+      <div class="result-actions" id="s-ract">
+        <a id="s-dl" class="btn-dl" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Updated .story
+        </a>
+        <p style="font-size:11px;color:var(--mu);max-width:360px;text-align:center;line-height:1.6;font-family:'Space Mono',monospace;">Storyline's correct/incorrect feedback layers reference answer text — review them after opening in Storyline.</p>
+        <button class="btn-ghost" onclick="doReset('story')">Process another file</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<div class="action-bar" id="actionBar">
+  <div class="ab-info">
+    <div class="ab-count"><span id="abCount">0</span> question<span id="abPlural">s</span> mapped</div>
+    <div class="ab-sub">Only mapped questions will be updated</div>
+  </div>
+  <button class="btn-apply" id="applyBtn" onclick="doApply()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="applyText">Apply &amp; Download</span>
+    <div class="spinner" id="applySpin"></div>
+  </button>
+</div>
+
+<script>
+// ── state ──────────────────────────────────────────────────────────────────────
+const MAX_FILE_MB = 80;
+let activeMethod = 'word';
+let ST = {
+  word:  { sid:null, sb:[], qs:[] },
+  story: { sid:null, sb:[], qs:[] }
+};
+const tabInited = new Set();
+
+// ── helpers ────────────────────────────────────────────────────────────────────
+const p  = m => m === 'word' ? 'w' : 's';
+const qs = m => m === 'word' ? ST.word.qs : ST.story.qs;
+const sb = m => m === 'word' ? ST.word.sb : ST.story.sb;
+const listId = m => m === 'word' ? 'w-qList' : 's-qList';
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function findCard(method, id) {
+  return Array.from(document.querySelectorAll(`#${listId(method)} .wq-card`))
+    .find(c => c.dataset.id === id);
+}
+async function post(url, body, isForm) {
+  const opts = { method:'POST', body };
+  if (!isForm) opts.headers = { 'Content-Type':'application/json' };
+  const r = await fetch(url, opts);
+  return r.json();
+}
+function setBusy(method, busy) {
+  const pre = p(method);
+  document.getElementById(`${pre}-scanBtn`).disabled = busy;
+  document.getElementById(`${pre}-scanText`).style.display = busy ? 'none' : 'inline';
+  document.getElementById(`${pre}-scanSpin`).style.display = busy ? 'block' : 'none';
+}
+function showError(method, msg) {
+  const el = document.getElementById(`${p(method)}-err`);
+  el.textContent = msg; el.style.display = 'block'; el.style.opacity = '0';
+  anime({ targets:el, opacity:[0,1], translateY:[6,0], duration:300, easing:'easeOutCubic' });
+}
+function showToast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  anime({ targets:t, opacity:[0,1], translateY:[10,0], duration:280, easing:'easeOutCubic' });
+  setTimeout(() => anime({ targets:t, opacity:[1,0], duration:240, easing:'easeInCubic',
+    complete:() => t.remove() }), 2500);
+}
+
+// ── animations ─────────────────────────────────────────────────────────────────
+function animUpload(method) {
+  const pre = p(method);
+  const els = [`#${pre}-upload .upload-eyebrow`, `#${pre}-upload .upload-heading`,
+                `#${pre}-upload .upload-sub`, `#${pre}-grid`, `#${pre}-upload .scan-wrap`];
+  els.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.opacity='0'; });
+  anime.timeline({ easing:'easeOutExpo' })
+    .add({ targets:els[0], opacity:[0,1], translateY:[8,0],  duration:480 })
+    .add({ targets:els[1], opacity:[0,1], translateY:[14,0], duration:520 }, '-=360')
+    .add({ targets:els[2], opacity:[0,1], translateY:[10,0], duration:480 }, '-=380')
+    .add({ targets:els[3], opacity:[0,1], translateY:[16,0], duration:460 }, '-=340')
+    .add({ targets:els[4], opacity:[0,1], translateY:[10,0], duration:380 }, '-=300');
+}
+function animMap(method) {
+  const pre = p(method);
+  anime({ targets:`#${pre}-map`, opacity:[0,1], translateY:[18,0], duration:480, easing:'easeOutExpo' });
+  setTimeout(() => {
+    anime({ targets:`#${pre}-sbList .sb-card`, opacity:[0,1], translateX:[-14,0],
+            delay:anime.stagger(55), duration:380, easing:'easeOutCubic' });
+    anime({ targets:`#${listId(method)} .wq-card`, opacity:[0,1], translateY:[10,0],
+            delay:anime.stagger(45), duration:360, easing:'easeOutCubic' });
+  }, 80);
+}
+function animActionBar(show) {
+  const bar = document.getElementById('actionBar');
+  if (show) {
+    bar.style.display = 'flex';
+    anime({ targets:bar, translateY:['100%','0%'], opacity:[0,1], duration:360, easing:'easeOutExpo' });
+  } else {
+    anime({ targets:bar, translateY:['0%','100%'], opacity:[1,0], duration:260, easing:'easeInCubic',
+      complete:() => { bar.style.display='none'; } });
+  }
+}
+function animResult(method) {
+  const pre = p(method);
+  anime({ targets:`#${pre}-ricon`, opacity:[0,1], scale:[0.4,1], duration:580, easing:'easeOutElastic(1,.6)' });
+  anime.timeline({ easing:'easeOutExpo' })
+    .add({ targets:`#${pre}-rh`,     opacity:[0,1], translateY:[14,0], duration:460, delay:140 })
+    .add({ targets:`#${pre}-rdesc`,  opacity:[0,1], translateY:[10,0], duration:420 }, '-=280')
+    .add({ targets:`#${pre}-rstats`, opacity:[0,1], translateY:[10,0], duration:420 }, '-=320')
+    .add({ targets:`#${pre}-ract`,   opacity:[0,1], translateY:[10,0], duration:380 }, '-=280');
+  setTimeout(() => {
+    document.querySelectorAll(`#${pre}-rstats .rstat .n`).forEach(el => {
+      const target = parseInt(el.textContent) || 0; el.textContent = '0';
+      anime({ targets:{v:0}, v:target, round:1, duration:900, easing:'easeOutCubic',
+        update(a) { el.textContent = Math.round(a.animations[0].currentValue); } });
+    });
+  }, 480);
+}
+
+// ── page load ──────────────────────────────────────────────────────────────────
+anime({ targets:'.nav',  opacity:[0,1], translateY:[-10,0], duration:480, easing:'easeOutCubic' });
+anime({ targets:'.tabs', opacity:[0,1], duration:380, delay:100, easing:'easeOutCubic' });
+tabInited.add('word');
+animUpload('word');
+
+// ── tab switching ──────────────────────────────────────────────────────────────
+function switchTab(method) {
+  activeMethod = method;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + method).classList.add('active');
+  document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + method);
+  panel.style.opacity = '0';
+  panel.classList.add('active');
+  anime({ targets:panel, opacity:[0,1], duration:280, easing:'easeOutCubic' });
+  if (!tabInited.has(method)) {
+    tabInited.add(method);
+    animUpload(method);
+  }
+  updateActionBar();
+}
+
+// ── drop zones ─────────────────────────────────────────────────────────────────
+function initZone(zoneId, inputId, nameId) {
+  const zone = document.getElementById(zoneId);
+  const inp  = document.getElementById(inputId);
+  const nm   = document.getElementById(nameId);
+  const setFile = f => {
+    if (f.size > MAX_FILE_MB * 1024 * 1024) {
+      showToast(`File too large — max ${MAX_FILE_MB} MB`); return;
+    }
+    zone.classList.add('has-file'); nm.textContent = f.name;
+    anime({ targets:zone, scale:[1.03,1], duration:320, easing:'easeOutExpo' });
+  };
+  inp.addEventListener('change', () => { if (inp.files[0]) setFile(inp.files[0]); });
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0]; if (!f) return;
+    const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files; setFile(f);
+  });
+}
+['w-pptxZone/w-pptxInput/w-pptxName', 'w-wordZone/w-wordInput/w-wordName',
+ 's-pptxZone/s-pptxInput/s-pptxName', 's-storyZone/s-storyInput/s-storyName'].forEach(s => {
+  const [z,i,n] = s.split('/'); initZone(z, i, n);
+});
+
+// ── scan ───────────────────────────────────────────────────────────────────────
+const SCAN_MSGS = ['Parsing PPTX…', 'Reading questions…', 'Almost done…'];
+async function doScan(method) {
+  const pre = p(method);
+  const isWord = method === 'word';
+  const pptx = document.getElementById(`${pre}-pptxInput`).files[0];
+  const other = document.getElementById(isWord ? 'w-wordInput' : 's-storyInput').files[0];
+  const errEl = document.getElementById(`${pre}-err`);
+  errEl.style.display = 'none';
+  if (!pptx || !other) { showError(method, 'Please select both files.'); return; }
+
+  setBusy(method, true);
+  let msgIdx = 0;
+  const ticker = setInterval(() => {
+    document.getElementById(`${pre}-scanText`).textContent = SCAN_MSGS[msgIdx++ % SCAN_MSGS.length];
+  }, 1200);
+
+  try {
+    const fd = new FormData();
+    fd.append('pptx', pptx);
+    fd.append(isWord ? 'word' : 'story', other);
+    const d = await post(isWord ? '/scan' : '/scan-story', fd, true);
+    if (d.error) { showError(method, d.error); return; }
+
+    ST[method].sid = d.session_id;
+    ST[method].sb  = d.pptx_questions;
+    ST[method].qs  = isWord ? d.word_questions : d.story_questions;
+    // Sweep stale localStorage keys from prior sessions for this method
+    try {
+      const pfx = `sb_${method}_`;
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(pfx) && k !== `${pfx}${d.session_id}`)
+          localStorage.removeItem(k);
+      }
+    } catch(_) {}
+    renderMap(method);
+  } catch(e) { showError(method, e.message); }
+  finally {
+    clearInterval(ticker);
+    document.getElementById(`${pre}-scanText`).textContent = 'Scan Files';
+    setBusy(method, false);
+  }
+}
+
+// ── render map step ────────────────────────────────────────────────────────────
+function renderMap(method) {
+  const pre    = p(method);
+  const isWord = method === 'word';
+  const sbArr  = ST[method].sb;
+  const qsArr  = ST[method].qs;
+  const uploadEl = document.getElementById(`${pre}-upload`);
+
+  anime({ targets:uploadEl, opacity:[1,0], translateY:[0,-14], duration:280, easing:'easeInCubic',
+    complete: () => {
+      uploadEl.style.display = 'none';
+
+      // counts
+      document.getElementById(`${pre}-sbCnt`).textContent = `(${sbArr.length})`;
+      document.getElementById(`${pre}-qCnt`).textContent  = `(${qsArr.length})`;
+
+      // SB cards
+      const sbList = document.getElementById(`${pre}-sbList`);
+      sbList.innerHTML = '';
+      sbArr.forEach(q => {
+        const c = document.createElement('div'); c.className = 'sb-card';
+        c.innerHTML = `<span class="sb-num">SB ${q.id}</span>
+          <div class="sb-stem">${esc(q.stem)}</div>
+          <div class="sb-opts">${q.options.length} option${q.options.length!==1?'s':''}</div>`;
+        sbList.appendChild(c);
+      });
+
+      // type filter pills (dynamic — only types that exist)
+      const types = [...new Set(qsArr.map(q => isWord ? q.type : q.q_type))];
+      const pillsEl = document.getElementById(`${pre}-pills`);
+      pillsEl.innerHTML = '';
+      const mkPill = (type, label) => {
+        const b = document.createElement('button'); b.className = 'type-pill' + (type==='all'?' active':'');
+        b.dataset.type = type; b.textContent = label;
+        b.onclick = () => filterType(method, type);
+        pillsEl.appendChild(b);
+      };
+      mkPill('all', 'All');
+      types.forEach(t => mkPill(t, t));
+
+      // question cards
+      const qList = document.getElementById(listId(method));
+      qList.innerHTML = '';
+      qsArr.forEach((q, idx) => {
+        const typeKey = isWord ? q.type : q.q_type;
+        const name    = isWord ? q.slide_name : q.slide_title;
+        const stem    = q.preview || q.stem || '';
+        const curOpts = isWord ? (q.options||[]) : (q.options||[]).map(o=>o.text||'');
+        const curOptsCount = isWord ? (q.options||[]).length : (q.options||[]).length;
+
+        // smart optgroups: matching option count first
+        const matching = sbArr.filter(sq => sq.options.length === curOptsCount);
+        const others   = sbArr.filter(sq => sq.options.length !== curOptsCount);
+        let opts = `<option value="">— Keep original —</option>`;
+        if (matching.length) {
+          opts += `<optgroup label="✓ Matching option count (${curOptsCount})">`;
+          matching.forEach(sq => { opts += `<option value="${sq.id}">SB ${sq.id}: ${esc(sq.preview)}</option>`; });
+          opts += `</optgroup>`;
+        }
+        if (others.length) {
+          opts += `<optgroup label="⚠ Different option count">`;
+          others.forEach(sq => { opts += `<option value="${sq.id}">SB ${sq.id} (${sq.options.length} opts): ${esc(sq.preview)}</option>`; });
+          opts += `</optgroup>`;
+        }
+
+        // options display (story shows correct indicators)
+        let optsHtml = '';
+        if (!isWord && q.options && q.options.length) {
+          optsHtml = `<div class="wq-options">` +
+            q.options.map(o => `<div class="opt-row">
+              <span class="opt-pos">op${o.position}</span>
+              <span class="opt-text">${esc(o.text||'—')}</span>
+              ${o.correct ? '<span class="opt-correct">✓ correct</span>' : ''}
+            </div>`).join('') + `</div>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'wq-card';
+        card.dataset.id        = isWord ? q.slide_id : q.slide_file;
+        card.dataset.type      = typeKey;
+        card.dataset.stem      = stem;
+        card.dataset.opts      = curOpts.join('||');
+        card.dataset.optsCount = curOptsCount;
+        card.dataset.nCorrect  = isWord ? 1 : (q.n_correct || 1);
+        card.innerHTML = `
+          <div class="wq-top">
+            <span class="wq-name">${esc(name)}</span>
+            <span class="badge badge-${typeKey}">${typeKey}</span>
+            <span class="mismatch-badge" id="mm-${method}-${idx}">⚠ count differs</span>
+            <span class="wq-stem">${esc(stem)}</span>
+          </div>
+          ${optsHtml}
+          <div class="wq-body">
+            <div class="wq-select-wrap">
+              <span class="wq-select-label">Replace with:</span>
+              <select onchange="onSelect(this,'${method}','${idx}')">
+                ${opts}
+              </select>
+            </div>
+            <div class="diff-wrap" id="diff-${method}-${idx}"></div>
+          </div>`;
+        qList.appendChild(card);
+      });
+
+      const mapEl = document.getElementById(`${pre}-map`);
+      mapEl.style.display = 'block';
+      animMap(method);
+      restoreMapping(method);
+      updateActionBar();
+    }
+  });
+}
+
+// ── onSelect ───────────────────────────────────────────────────────────────────
+function onSelect(sel, method, idx, silent) {
+  const card = sel.closest('.wq-card');
+  const sbId = sel.value;
+  const sbQ  = sbId ? ST[method].sb.find(q => String(q.id) === sbId) : null;
+  const diff = document.getElementById(`diff-${method}-${idx}`);
+  const mmBadge = document.getElementById(`mm-${method}-${idx}`);
+
+  if (!sbQ) {
+    card.classList.remove('mapped');
+    if (mmBadge) mmBadge.style.display = 'none';
+    if (diff && diff.classList.contains('visible')) {
+      anime({ targets:diff, opacity:[1,0], duration:200, easing:'easeInCubic',
+        complete:() => { diff.classList.remove('visible'); diff.innerHTML=''; diff.style.opacity=''; } });
+    }
+  } else {
+    card.classList.add('mapped');
+
+    // mismatch badge — option count and semantic type warnings
+    const curCount   = parseInt(card.dataset.optsCount) || 0;
+    const curType    = card.dataset.type || '';
+    const nCorrect   = parseInt(card.dataset.nCorrect) || 1;
+    const countDiff  = sbQ.options.length !== curCount;
+    let mmText = '';
+    if (countDiff) {
+      mmText = `⚠ ${sbQ.options.length} vs ${curCount} options`;
+    } else if (curType === 'MRQ') {
+      mmText = `⚠ MRQ: verify ${nCorrect} correct answers`;
+    } else if (curType === 'DND') {
+      mmText = '⚠ DND: verify drag targets';
+    }
+    if (mmBadge) { mmBadge.textContent = mmText; mmBadge.style.display = mmText ? 'inline-flex' : 'none'; }
+
+    // diff preview
+    if (diff) {
+      const curStem = card.dataset.stem || '';
+      const curOpts = (card.dataset.opts || '').split('||').filter(Boolean);
+      diff.innerHTML = `<div class="diff-grid">
+        <div class="diff-side diff-before">
+          <div class="diff-label">Current</div>
+          <div class="diff-stem">${esc(curStem)}</div>
+          ${curOpts.map(o=>`<div class="diff-opt">· ${esc(o)}</div>`).join('')}
+        </div>
+        <div class="diff-arrow">→</div>
+        <div class="diff-side diff-after">
+          <div class="diff-label">New</div>
+          <div class="diff-stem">${esc(sbQ.stem)}</div>
+          ${sbQ.options.map(o=>`<div class="diff-opt">· ${esc(o)}</div>`).join('')}
+        </div>
+      </div>`;
+      diff.style.opacity = '0'; diff.classList.add('visible');
+      anime({ targets:diff, opacity:[0,1], translateY:[6,0], duration:260, easing:'easeOutCubic' });
+    }
+  }
+  if (!silent) saveMapping(method);
+  updateActionBar();
+}
+
+// ── filter by type ─────────────────────────────────────────────────────────────
+function filterType(method, type) {
+  const pre = p(method);
+  document.querySelectorAll(`#${listId(method)} .wq-card`).forEach(card => {
+    card.style.display = (type === 'all' || card.dataset.type === type) ? '' : 'none';
+  });
+  document.querySelectorAll(`#${pre}-pills .type-pill`).forEach(pill => {
+    pill.classList.toggle('active', pill.dataset.type === type);
+  });
+}
+
+// ── auto-suggest (similarity-based) ────────────────────────────────────────────
+function _wordSim(a, b) {
+  if (!a || !b) return 0;
+  const tok = s => new Set(s.toLowerCase().split(/\W+/).filter(w => w.length > 3));
+  const wa = tok(a), wb = tok(b);
+  if (!wa.size || !wb.size) return 0;
+  let n = 0; wa.forEach(w => { if (wb.has(w)) n++; });
+  return n / Math.max(wa.size, wb.size);
+}
+
+function autoSuggest(method) {
+  const sbArr   = ST[method].sb;
+  const allCards = Array.from(document.querySelectorAll(`#${listId(method)} .wq-card`));
+  const cards   = allCards.filter(c => c.style.display !== 'none');
+  const usedIds = new Set();
+  let n = 0;
+
+  cards.forEach(card => {
+    const sel = card.querySelector('select');
+    if (!sel || sel.value) return;
+    const stem     = card.dataset.stem || '';
+    const cardOpts = (card.dataset.opts || '').split('||').filter(Boolean).join(' ');
+    let best = -1, bestId = null;
+    sbArr.forEach(sq => {
+      if (usedIds.has(sq.id)) return;
+      const stemScore = _wordSim(stem, sq.preview || sq.stem || '');
+      const optsScore = _wordSim(cardOpts, (sq.options || []).join(' '));
+      const score     = stemScore * 0.7 + optsScore * 0.3;
+      if (score > best) { best = score; bestId = sq.id; }
+    });
+    if (bestId !== null && best >= 0) {
+      const opt = sel.querySelector(`option[value="${bestId}"]`);
+      if (opt) {
+        sel.value = String(bestId);
+        onSelect(sel, method, allCards.indexOf(card), true);
+        usedIds.add(bestId); n++;
+      }
+    }
+  });
+  saveMapping(method); updateActionBar();
+  showToast(n ? `Auto-suggested ${n} mapping${n!==1?'s':''}` : 'No matches found — map manually');
+}
+
+// ── clear all mappings ─────────────────────────────────────────────────────────
+function clearAllMappings(method) {
+  const allCards = Array.from(document.querySelectorAll(`#${listId(method)} .wq-card`));
+  let n = 0;
+  allCards.forEach((card, idx) => {
+    const sel = card.querySelector('select');
+    if (sel && sel.value) { sel.value = ''; onSelect(sel, method, idx, true); n++; }
+  });
+  saveMapping(method); updateActionBar();
+  if (n) showToast(`Cleared ${n} mapping${n!==1?'s':''}`);
+}
+
+// ── export / import JSON ───────────────────────────────────────────────────────
+function exportJSON(method) {
+  const mappings = [];
+  document.querySelectorAll(`#${listId(method)} .wq-card`).forEach(card => {
+    const sel = card.querySelector('select');
+    if (sel && sel.value)
+      mappings.push({ course_id: card.dataset.id, sb_id: parseInt(sel.value) });
+  });
+  const blob = new Blob([JSON.stringify({
+    version: 1, method, created: new Date().toISOString(), mappings
+  }, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sb_mapping_${method}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast(`Exported ${mappings.length} mapping${mappings.length!==1?'s':''}`);
+}
+
+function importJSON(input, method) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.mappings) throw new Error();
+      if (data.method && data.method !== method) {
+        showToast(`This mapping was exported from the ${data.method} tab — switch tabs before importing`);
+        input.value = ''; return;
+      }
+      let applied = 0;
+      const cards = Array.from(document.querySelectorAll(`#${listId(method)} .wq-card`));
+      data.mappings.forEach((m, i) => {
+        const card = cards.find(c => c.dataset.id === m.course_id);
+        if (!card) return;
+        const sel = card.querySelector('select');
+        const opt = sel && sel.querySelector(`option[value="${m.sb_id}"]`);
+        if (opt) {
+          const idx = cards.indexOf(card);
+          sel.value = m.sb_id;
+          onSelect(sel, method, idx, true);
+          applied++;
+        }
+      });
+      saveMapping(method);
+      updateActionBar();
+      showToast(`Imported ${applied} mapping${applied!==1?'s':''}`);
+    } catch(e) { showToast('Invalid mapping file'); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── localStorage ───────────────────────────────────────────────────────────────
+function saveMapping(method) {
+  const sid = ST[method].sid; if (!sid) return;
+  const mappings = [];
+  document.querySelectorAll(`#${listId(method)} .wq-card`).forEach(card => {
+    const sel = card.querySelector('select');
+    if (sel && sel.value) mappings.push({ id: card.dataset.id, sbId: sel.value });
+  });
+  try { localStorage.setItem(`sb_${method}_${sid}`, JSON.stringify(mappings)); } catch(_) {}
+}
+
+function restoreMapping(method) {
+  const sid = ST[method].sid; if (!sid) return;
+  try {
+    const raw = localStorage.getItem(`sb_${method}_${sid}`);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    const cards = Array.from(document.querySelectorAll(`#${listId(method)} .wq-card`));
+    let restored = 0;
+    saved.forEach(m => {
+      const card = cards.find(c => c.dataset.id === m.id);
+      if (!card) return;
+      const sel = card.querySelector('select');
+      const opt = sel && sel.querySelector(`option[value="${m.sbId}"]`);
+      if (opt) { const idx=cards.indexOf(card); sel.value=m.sbId; onSelect(sel,method,idx,true); restored++; }
+    });
+    if (restored) showToast(`Restored ${restored} saved mapping${restored!==1?'s':''}`);
+  } catch(_) {}
+}
+
+// ── action bar ─────────────────────────────────────────────────────────────────
+function updateActionBar() {
+  const mapped  = document.querySelectorAll(`#panel-${activeMethod} .wq-card.mapped`).length;
+  const inMap   = document.getElementById(`${p(activeMethod)}-map`).style.display !== 'none';
+  const bar     = document.getElementById('actionBar');
+  document.getElementById('abCount').textContent  = mapped;
+  document.getElementById('abPlural').textContent = mapped===1 ? '' : 's';
+  const isVisible = bar.style.display === 'flex';
+  if (inMap && !isVisible)  animActionBar(true);
+  if (!inMap && isVisible)  animActionBar(false);
+}
+
+// ── apply ──────────────────────────────────────────────────────────────────────
+async function doApply() {
+  const method = activeMethod;
+  const isWord = method === 'word';
+  const sid    = ST[method].sid;
+  const cards  = document.querySelectorAll(`#panel-${method} .wq-card.mapped`);
+  const mappings = [];
+  let mismatches = 0;
+  cards.forEach(card => {
+    const sbId = parseInt(card.querySelector('select').value);
+    if (!sbId) return;
+    // Count option-count mismatches for result summary
+    const mm = card.querySelector('.mismatch-badge');
+    if (mm && mm.style.display !== 'none' && mm.textContent.includes('vs')) mismatches++;
+    if (isWord) mappings.push({ word_slide_id: card.dataset.id, pptx_id: sbId });
+    else        mappings.push({ story_slide_file: card.dataset.id, pptx_id: sbId });
+  });
+  if (!mappings.length) { showToast('Map at least one question first'); return; }
+
+  document.getElementById('applyBtn').disabled = true;
+  document.getElementById('applyText').style.display = 'none';
+  document.getElementById('applySpin').style.display = 'block';
+
+  try {
+    const d = await post(isWord ? '/apply' : '/apply-story',
+                         JSON.stringify({ session_id:sid, mappings }), false);
+    if (d.error) { showToast('Error: ' + d.error); return; }
+    showResult(method, d, mismatches);
+  } catch(e) { showToast('Error: ' + e.message); }
+  finally {
+    document.getElementById('applyBtn').disabled = false;
+    document.getElementById('applyText').style.display = 'inline';
+    document.getElementById('applySpin').style.display = 'none';
+  }
+}
+
+// ── result ─────────────────────────────────────────────────────────────────────
+function showResult(method, data, mismatches = 0) {
+  const pre   = p(method);
+  const mapEl = document.getElementById(`${pre}-map`);
+  animActionBar(false);
+  anime({ targets:mapEl, opacity:[1,0], translateY:[0,-14], duration:260, easing:'easeInCubic',
+    complete: () => {
+      mapEl.style.display = 'none';
+      const results = data.results || [];
+      const n = results.length;
+      const cells = results.reduce((s,r) => s + (r.filled||r.changes||0), 0);
+      document.getElementById(`${pre}-rdesc`).textContent =
+        `${n} question${n!==1?'s':''} updated successfully.`;
+      let statsHtml = `
+        <div class="rstat"><div class="n" style="color:var(--gr)">${n}</div><div class="l">Updated</div></div>
+        <div class="rstat"><div class="n">${cells}</div><div class="l">${method==='word'?'Cells':'Blocks'} written</div></div>`;
+      if (mismatches > 0)
+        statsHtml += `<div class="rstat"><div class="n" style="color:var(--rd)">${mismatches}</div><div class="l">Count mismatch</div></div>`;
+      document.getElementById(`${pre}-rstats`).innerHTML = statsHtml;
+
+      // Per-slide errors and server-detected mismatches
+      const slideErrors    = results.filter(r => r.error);
+      const serverMismatches = results.filter(r => r.mismatch > 0);
+      if (slideErrors.length || serverMismatches.length) {
+        let errHtml = '<div style="max-width:480px;text-align:left;margin-top:8px;margin-bottom:4px;">';
+        slideErrors.forEach(r => {
+          const name = esc(r.slide_name || r.slide_file || '');
+          errHtml += `<div style="font-size:11px;color:var(--rd);font-family:'Space Mono',monospace;padding:3px 0;line-height:1.5;">✕ ${name}: ${esc(r.error)}</div>`;
+        });
+        serverMismatches.forEach(r => {
+          const name = esc(r.slide_name || r.slide_file || '');
+          const diff = r.mismatch;
+          errHtml += `<div style="font-size:11px;color:#fb923c;font-family:'Space Mono',monospace;padding:3px 0;line-height:1.5;">⚠ ${name}: ${diff} option${diff!==1?'s':''} unmatched (count differs)</div>`;
+        });
+        errHtml += '</div>';
+        document.getElementById(`${pre}-rstats`).insertAdjacentHTML('afterend', errHtml);
+      }
+      document.getElementById(`${pre}-dl`).href =
+        (method==='word' ? '/download/' : '/download-story/') + data.session_id;
+      // clean up localStorage since download is about to happen
+      try { localStorage.removeItem(`sb_${method}_${ST[method].sid}`); } catch(_) {}
+      const resultEl = document.getElementById(`${pre}-result`);
+      resultEl.style.display = 'flex';
+      animResult(method);
+    }
+  });
+}
+
+// ── reset ──────────────────────────────────────────────────────────────────────
+function doReset(method) {
+  const pre      = p(method);
+  const resultEl = document.getElementById(`${pre}-result`);
+  const uploadEl = document.getElementById(`${pre}-upload`);
+  animActionBar(false);
+  anime({ targets:resultEl, opacity:[1,0], translateY:[0,-14], duration:260, easing:'easeInCubic',
+    complete: () => {
+      resultEl.style.display = 'none';
+      ST[method] = { sid:null, sb:[], qs:[] };
+      // clear file inputs
+      const inputs = method==='word'
+        ? ['w-pptxInput','w-wordInput'] : ['s-pptxInput','s-storyInput'];
+      inputs.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+      const zones = method==='word'
+        ? ['w-pptxZone','w-wordZone'] : ['s-pptxZone','s-storyZone'];
+      zones.forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('has-file'); });
+      // reset upload step animations
+      uploadEl.style.display = 'flex'; uploadEl.style.opacity = '0';
+      animUpload(method);
+    }
+  });
+}
+</script>
+</body>
+</html>
