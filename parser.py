@@ -19,9 +19,13 @@ def _clean(text):
 
 def _is_item_state(type_str):
     """True if this row type represents an answer-state variant (not Normal)."""
-    return ('Selected state' in type_str or 'crct state' in type_str or
-            'inc state'      in type_str or 'Drop Correct'  in type_str or
-            'Drop Incorrect' in type_str)
+    tl = type_str.lower()
+    if 'alttext' in tl or 'alt text' in tl:
+        return False  # image alt-text rows, not answer choices
+    return ('selected state' in tl or 'sw state'      in tl or
+            'crt state'      in tl or 'crct state'    in tl or
+            'inc state'      in tl or 'ict state'     in tl or
+            'drop correct'   in tl or 'drop incorrect' in tl)
 
 
 def _is_skip(text):
@@ -69,15 +73,20 @@ def _split_proportional(new_text, orig_full, orig_seg1):
 # ── question type detection ───────────────────────────────────────────────────
 
 def _detect_type(data_rows):
-    types = [r[1] for r in data_rows if len(r) > 1]
-    has_drop = any('Drop Correct' in t or 'Drop Incorrect' in t for t in types)
-    # both old format ('crt state') and new SingleTable format ('crct state')
-    has_crt  = any('crt state' in t or 'crct state' in t for t in types)
-    has_inc  = any('inc state'    in t for t in types)
-    has_sel  = any('Selected state' in t for t in types)
+    # Lowercase + exclude AltText rows for state detection
+    types = [r[1].lower() for r in data_rows
+             if len(r) > 1 and 'alttext' not in r[1].lower() and 'alt text' not in r[1].lower()]
+    has_drop      = any('drop correct' in t or 'drop incorrect' in t for t in types)
+    # any state marker that labels answer choices (case-insensitive)
+    has_opt_state = any(
+        'crt state'      in t or 'crct state'     in t or
+        'inc state'      in t or 'ict state'      in t or
+        'selected state' in t or 'sw state'       in t
+        for t in types
+    )
     if has_drop:
         return 'DND'
-    if has_crt and (has_sel or has_inc):
+    if has_opt_state:
         item_texts = {_clean(r[2]) for r in data_rows
                       if _is_item_state(r[1]) and len(r) > 2}
         return 'TF' if len(item_texts) <= 2 else 'MCQ'
@@ -95,8 +104,11 @@ def _stem_and_options(data_rows, q_type=None):
     for row in data_rows:
         if len(row) < 3 or row[1] == 'Slide name':
             continue
-        if 'Normal state' not in row[1]:
+        tl = row[1].lower()
+        if 'normal state' not in tl:
             continue
+        if 'alttext' in tl or 'alt text' in tl:
+            continue  # image alt-text, not a translatable choice
         cleaned = _clean(row[2])
         if _is_skip(cleaned):
             continue
