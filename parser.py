@@ -421,6 +421,9 @@ def _fill(word_q, pptx_entry):
     text_map = {}
     if word_q['stem'] and pptx_entry['stem']:
         text_map[word_q['stem']] = pptx_entry['stem']
+    elif pptx_entry['stem']:
+        # Template slide: %question% is a runtime placeholder; write PPTX stem there
+        text_map['%question%'] = pptx_entry['stem']
     for w_opt, p_opt in zip(word_q['options'], pptx_entry['options']):
         text_map[w_opt] = p_opt
     mismatch = abs(len(word_q['options']) - len(pptx_entry['options']))
