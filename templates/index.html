@@ -246,6 +246,12 @@
     .rstat { background:var(--sf); border:1px solid var(--bd); border-radius:var(--rl); padding:16px 26px; min-width:100px; }
     .rstat .n { font-size:32px; font-weight:800; font-family:'Playfair Display',serif; }
     .rstat .l { font-size:10px; color:var(--mu); margin-top:3px; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:.07em; }
+    .result-impact { display:none; max-width:520px; margin:20px auto 0; padding:15px 22px;
+      background:rgba(34,197,94,.07); border:1px solid rgba(34,197,94,.28); border-radius:var(--rl);
+      text-align:center; line-height:1.6; font-size:14px; color:var(--tx2); }
+    .result-impact b { font-family:'Playfair Display',serif; font-weight:800; color:var(--gr); }
+    .result-impact .sub { display:block; font-size:11px; color:var(--mu); margin-top:6px;
+      font-family:'Space Mono',monospace; letter-spacing:.03em; }
     .result-actions { display:flex; flex-direction:column; align-items:center; gap:12px; }
     .btn-dl { display:inline-flex; align-items:center; gap:9px; padding:13px 32px;
               background:var(--gr); color:#fff; font-size:12px; font-weight:700;
@@ -355,6 +361,7 @@
       <h2 id="w-rh">Done</h2>
       <p id="w-rdesc"></p>
       <div class="result-stats" id="w-rstats"></div>
+      <div class="result-impact" id="w-rimpact"></div>
       <div class="result-actions" id="w-ract">
         <a id="w-dl" class="btn-dl" href="#">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -436,6 +443,7 @@
       <h2 id="s-rh">Done</h2>
       <p id="s-rdesc"></p>
       <div class="result-stats" id="s-rstats"></div>
+      <div class="result-impact" id="s-rimpact"></div>
       <div class="result-actions" id="s-ract">
         <a id="s-dl" class="btn-dl" href="#">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1039,6 +1047,19 @@ function showResult(method, data, mismatches = 0) {
       if (mismatches > 0)
         statsHtml += `<div class="rstat"><div class="n" style="color:var(--rd)">${mismatches}</div><div class="l">Count mismatch</div></div>`;
       document.getElementById(`${pre}-rstats`).innerHTML = statsHtml;
+
+      // Impact summary — every synced string is one manual re-entry avoided
+      const impactEl = document.getElementById(`${pre}-rimpact`);
+      if (cells > 0) {
+        const mins = Math.max(1, Math.round(cells * 45 / 60));  // ~45s per string, conservatively
+        impactEl.innerHTML =
+          `<b>${cells} manual re-entries avoided</b> in this file` +
+          `<span class="sub">≈ ${mins} min of copy-paste-and-verify saved (~45s/string) ` +
+          `· repeat per language for the full multiplier</span>`;
+        impactEl.style.display = 'block';
+      } else {
+        impactEl.style.display = 'none';
+      }
 
       // Per-slide errors and server-detected mismatches
       const slideErrors    = results.filter(r => r.error);
