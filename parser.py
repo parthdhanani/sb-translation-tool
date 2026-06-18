@@ -1,8 +1,7 @@
 import re
-import difflib
+
 from docx import Document
 from pptx import Presentation
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -144,14 +143,14 @@ def get_pptx_questions(pptx_path):
 
         block = max(texts, key=len)
         # \x0b = PowerPoint soft-return; treat it as a line break
-        lines = [l.strip() for l in block.replace('\x0b', '\n').split('\n') if l.strip()]
+        lines = [ln.strip() for ln in block.replace('\x0b', '\n').split('\n') if ln.strip()]
 
         if len(lines) < 2:
             continue
 
         stem = lines[0]
         # strip A. / a. / A) / a) / 1. / 1) option-letter prefixes
-        options = [re.sub(r'^[A-Da-d1-9][.)]\s*', '', l).strip() for l in lines[1:]]
+        options = [re.sub(r'^[A-Da-d1-9][.)]\s*', '', ln).strip() for ln in lines[1:]]
 
         result.append({
             'id':       idx + 1,
