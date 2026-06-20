@@ -1,6 +1,13 @@
-from flask import Flask, request, jsonify, send_file, render_template, after_this_request
+import os
+import re
+import shutil
+import sys
+import threading
+import time
+import uuid
 from pathlib import Path
-import uuid, os, sys, shutil, threading, time, re
+
+from flask import Flask, after_this_request, jsonify, render_template, request, send_file
 
 sys.path.insert(0, os.path.dirname(__file__))
 import parser as sb_parser
@@ -110,7 +117,8 @@ def index():
 @app.route('/scan', methods=['POST'])
 def scan():
     cap = _check_sessions()
-    if cap: return cap
+    if cap:
+        return cap
 
     pptx_file = request.files.get('pptx')
     word_file = request.files.get('word')
@@ -150,6 +158,8 @@ def scan():
 def apply():
     data        = request.get_json()
     session_id  = data.get('session_id')
+    if not _valid_sid(session_id):
+        return jsonify({'error': 'Invalid session.'}), 400
     mappings    = data.get('mappings', [])
     session_dir = SESSIONS / session_id
     pptx_path   = session_dir / 'input.pptx'
@@ -159,7 +169,6 @@ def apply():
     if not pptx_path.exists() or not word_path.exists():
         return jsonify({'error': 'Session expired or not found. Please re-upload your files.'}), 404
 
-    orig_name = (session_dir / 'orig_name.txt').read_text()
     try:
         doc, results = sb_parser.apply_mappings(str(word_path), str(pptx_path), mappings)
         doc.save(str(out_path))
@@ -172,7 +181,8 @@ def apply():
 @app.route('/scan-story', methods=['POST'])
 def scan_story():
     cap = _check_sessions()
-    if cap: return cap
+    if cap:
+        return cap
 
     pptx_file  = request.files.get('pptx')
     story_file = request.files.get('story')
@@ -212,6 +222,8 @@ def scan_story():
 def apply_story():
     data        = request.get_json()
     session_id  = data.get('session_id')
+    if not _valid_sid(session_id):
+        return jsonify({'error': 'Invalid session.'}), 400
     mappings    = data.get('mappings', [])
     session_dir = SESSIONS / session_id
     pptx_path   = session_dir / 'input.pptx'

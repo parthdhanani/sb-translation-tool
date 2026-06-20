@@ -31,7 +31,8 @@ Key schema facts (stable across Storyline versions):
   dragDropIntr   → marker that identifies DnD slides.
 """
 
-import zipfile, re
+import re
+import zipfile
 from pathlib import Path
 
 # ── compiled patterns ────────────────────────────────────────────────────────
