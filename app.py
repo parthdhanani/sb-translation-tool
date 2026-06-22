@@ -2,12 +2,11 @@ import os
 import re
 import shutil
 import sys
-import threading
 import time
 import uuid
 from pathlib import Path
 
-from flask import Flask, after_this_request, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file
 
 sys.path.insert(0, os.path.dirname(__file__))
 import parser as sb_parser
@@ -34,30 +33,7 @@ for _d in list(SESSIONS.iterdir()):
         pass
 
 
-# ── background cleanup ─────────────────────────────────────────────────────────
-
-def _cleanup_loop():
-    while True:
-        time.sleep(300)          # run every 5 minutes
-        cutoff = time.time() - MAX_AGE_S
-        for d in SESSIONS.iterdir():
-            try:
-                if d.is_dir() and d.stat().st_mtime < cutoff:
-                    shutil.rmtree(d, ignore_errors=True)
-            except Exception:
-                pass
-
-threading.Thread(target=_cleanup_loop, daemon=True).start()
-
-
 # ── helpers ────────────────────────────────────────────────────────────────────
-
-def _delete_after(session_dir: Path):
-    @after_this_request
-    def _rm(response):
-        shutil.rmtree(session_dir, ignore_errors=True)
-        return response
-
 
 def _check_sessions():
     """Evict expired sessions inline, then return error if cap still reached."""
@@ -258,7 +234,6 @@ def download(session_id):
     if not out_path.exists():
         return 'Not found', 404
     orig_name = (session_dir / 'orig_name.txt').read_text()
-    _delete_after(session_dir)
     return send_file(str(out_path), as_attachment=True,
                      download_name='updated_' + orig_name)
 
@@ -272,7 +247,6 @@ def download_story(session_id):
     if not out_path.exists():
         return 'Not found', 404
     orig_name = (session_dir / 'orig_name.txt').read_text()
-    _delete_after(session_dir)
     return send_file(str(out_path), as_attachment=True,
                      download_name='updated_' + orig_name)
 
