@@ -1,0 +1,70 @@
+# .claudeignore — auto-applied by Claude Code session hook
+# Prevents token-heavy paths from entering context window
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+__pycache__/
+
+# Build output (keep dist/ available — SCORM packages live there)
+build/
+.next/
+.nuxt/
+.cache/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+Gemfile.lock
+
+# Compiled / minified (unreadable anyway)
+*.min.js
+*.min.css
+*.map
+
+# Media (Claude can't read binary files)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.pdf
+*.mp4
+*.zip
+*.tar.gz
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and temp
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Secrets — never expose to context
+.env
+.env.local
+.env.production
+.env.staging
+
+# Credentials and SSH keys
+.ssh/
+.gnupg/
+.aws/
+.config/gcloud/
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
