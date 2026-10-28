@@ -55,6 +55,15 @@ _SLIDE_TITLE = re.compile(
 
 # ── low-level XML helpers ────────────────────────────────────────────────────
 
+MAX_UNPACKED_B = 1024 * 1024 * 1024   # real .story files unpack to ~60 MB; this only stops zip bombs
+
+
+def _check_zip_size(z: zipfile.ZipFile) -> None:
+    """Refuse an archive that would unpack to far more than any real .story (declared sizes, read before extracting)."""
+    if sum(i.file_size for i in z.infolist()) > MAX_UNPACKED_B:
+        raise ValueError('The .story file expands to an unreasonable size and was rejected.')
+
+
 def _plain_text(raw: str) -> str:
     """Collapse a raw <plain> value to a single display string.
     Normalises all whitespace runs to a single space so the result matches
@@ -336,6 +345,7 @@ def get_story_questions(story_path: str) -> list:
     """
     questions = []
     with zipfile.ZipFile(story_path, 'r', allowZip64=True) as z:
+        _check_zip_size(z)
         names = z.namelist()
 
         title_map = {}
@@ -392,6 +402,7 @@ def apply_story_mappings(story_path: str, pptx_questions: list,
     # Stream: read one entry → optionally modify → write → free memory
     with zipfile.ZipFile(story_path, 'r', allowZip64=True) as zin, \
          zipfile.ZipFile(output_path, 'w', allowZip64=True) as zout:
+        _check_zip_size(zin)
 
         for info in zin.infolist():
             raw = zin.read(info.filename)
