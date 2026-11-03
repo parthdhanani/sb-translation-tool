@@ -14,10 +14,12 @@ The app runs on `http://localhost:5050` by default.
 ## Running tests
 
 ```bash
-python -m pytest test/ -v
+pip install -r requirements-dev.txt
+ruff check .
+python -m pytest -v
 ```
 
-There are no automated tests yet — the app is tested manually by uploading sample PPTX and .story files through the UI.
+The suite runs offline against synthetic fixtures built in `tests/fixtures.py`. For parser changes, also check manually against a real PPTX + `.story` pair (never commit client files; `*.story` is gitignored).
 
 ## Reporting issues
 
@@ -30,6 +32,6 @@ Open a GitHub issue. Include:
 
 1. Fork the repo
 2. Create a branch: `git checkout -b fix/your-description`
-3. Make changes, test manually against a real PPTX + .story pair
+3. Make changes, run the tests, and check manually against a real PPTX + .story pair
 4. Open a PR with a description of what changed and why
 

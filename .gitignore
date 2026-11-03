@@ -28,3 +28,8 @@ env/
 
 # code-review-graph index (local, do not commit)
 .code-review-graph/
+
+# test / tool caches
+.pytest_cache/
+.ruff_cache/
+.DS_Store

@@ -76,6 +76,12 @@ def _check_filetype(path: Path, label: str):
     return None
 
 
+def _json_body() -> dict:
+    """Request JSON as a dict; {} for a missing, malformed, or non-object body."""
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else {}
+
+
 # ── error handlers ─────────────────────────────────────────────────────────────
 
 @app.errorhandler(413)
@@ -132,7 +138,7 @@ def scan():
 
 @app.route('/apply', methods=['POST'])
 def apply():
-    data        = request.get_json()
+    data        = _json_body()
     session_id  = data.get('session_id')
     if not _valid_sid(session_id):
         return jsonify({'error': 'Invalid session.'}), 400
@@ -196,7 +202,7 @@ def scan_story():
 
 @app.route('/apply-story', methods=['POST'])
 def apply_story():
-    data        = request.get_json()
+    data        = _json_body()
     session_id  = data.get('session_id')
     if not _valid_sid(session_id):
         return jsonify({'error': 'Invalid session.'}), 400
